@@ -1,11 +1,11 @@
 module MicroEntrega1 where
 
 type Acumulador = Int
-
+type Memoria = [Int]
 type Instruccion = (Microprocesador -> Microprocesador)
 
 data Microprocesador = Microprocesador{modelo :: String, programCounter :: Int, acumuladorA :: Acumulador,
-  acumuladorB :: Acumulador, memoria :: [Int], mensajeError :: String}
+  acumuladorB :: Acumulador, memoria :: Memoria, mensajeError :: String}
 
 instance Show Microprocesador where
   show microprocesador = "Modelo: " ++ modelo microprocesador ++ "\nProgram counter: " ++ (show.programCounter) microprocesador ++
@@ -26,14 +26,15 @@ nop microprocesador = microprocesador{programCounter = programCounter microproce
 
 add :: Instruccion
 add microprocesador = microprocesador{acumuladorA = acumuladorA microprocesador + acumuladorB microprocesador,
-  acumuladorB = 0}
+  acumuladorB = 0, programCounter = programCounter microprocesador + 1}
 
 errorDivisionPorCero :: Instruccion
-errorDivisionPorCero microprocesador = microprocesador{mensajeError = "DIVISION BY ZERO"}
+errorDivisionPorCero microprocesador = microprocesador{mensajeError = "DIVISION BY ZERO",
+  programCounter = programCounter microprocesador + 1}
 
 realizarDivision :: Instruccion
 realizarDivision microprocesador = microprocesador{acumuladorA = div (acumuladorA microprocesador) (acumuladorB microprocesador),
-  acumuladorB = 0}
+  acumuladorB = 0, programCounter = programCounter microprocesador + 1}
 
 divide :: Instruccion
 divide microprocesador
@@ -41,7 +42,38 @@ divide microprocesador
   |otherwise = realizarDivision microprocesador
 
 swap :: Instruccion
-swap microprocesador = microprocesador{acumuladorA = acumuladorB microprocesador, acumuladorB = acumuladorA microprocesador}
+swap microprocesador = microprocesador{acumuladorA = acumuladorB microprocesador, acumuladorB = acumuladorA microprocesador,
+  programCounter = programCounter microprocesador + 1}
 
-lodv :: Int -> Microprocesador -> Microprocesador --Aplicada parcialmente se convertirá en una instrucción
-lodv valorACargar microprocesador = microprocesador{acumuladorA = valorACargar}
+lodv :: Int -> Microprocesador -> Microprocesador
+lodv valorACargar microprocesador = microprocesador{acumuladorA = valorACargar, programCounter = programCounter microprocesador + 1}
+
+cargarMemoriaEnAcumuladorA :: Int -> Microprocesador -> Microprocesador
+cargarMemoriaEnAcumuladorA direccion microprocesador = microprocesador{acumuladorA = (memoria microprocesador) !! (direccion - 1),
+  programCounter = programCounter microprocesador + 1}
+
+errorMemoriaNoInicializada :: Instruccion
+errorMemoriaNoInicializada microprocesador = microprocesador{mensajeError = "Posicion de memoria especificada no inicializada",
+  programCounter = programCounter microprocesador + 1}
+
+lod :: Int -> Microprocesador -> Microprocesador
+lod direccion microprocesador
+  |(length.memoria) microprocesador >= direccion = cargarMemoriaEnAcumuladorA direccion microprocesador
+  |otherwise = errorMemoriaNoInicializada microprocesador
+
+cargarValorEnMemoria :: Int -> Int -> Memoria -> Memoria
+cargarValorEnMemoria direccion valor memoria = (take (direccion - 1) memoria) ++ (valor : drop direccion memoria)
+
+extenderMemoria :: Int -> Memoria -> Memoria
+extenderMemoria direccion memoria = memoria ++ (replicate (direccion - length memoria) 0)
+
+inicializarMemoria :: Int -> Int -> Microprocesador -> Microprocesador
+inicializarMemoria direccion valor microprocesador = microprocesador{
+  memoria = cargarValorEnMemoria direccion valor (extenderMemoria direccion (memoria microprocesador)),
+  programCounter = programCounter microprocesador + 1}
+
+str :: Int -> Int -> Microprocesador -> Microprocesador
+str direccion valor microprocesador
+  |(length.memoria) microprocesador >= direccion = microprocesador{memoria = cargarValorEnMemoria direccion valor
+    (memoria microprocesador), programCounter = programCounter microprocesador + 1}
+  |otherwise = inicializarMemoria direccion valor microprocesador
