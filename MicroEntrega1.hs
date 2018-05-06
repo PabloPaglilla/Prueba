@@ -21,44 +21,45 @@ at8086 = Microprocesador{modelo = "at8086", programCounter = 0, acumuladorA = 0,
 fp20 = Microprocesador{modelo = "fp20", programCounter = 0, acumuladorA = 7, acumuladorB = 24,
   memoria = [], mensajeError = ""}
 
+aumentarProgramCounter microprocesador = microprocesador {programCounter = programCounter microprocesador + 1}
+
 nop :: Instruccion
-nop microprocesador = microprocesador{programCounter = programCounter microprocesador + 1}
+nop = aumentarProgramCounter
 
 add :: Instruccion
-add microprocesador = microprocesador{acumuladorA = acumuladorA microprocesador + acumuladorB microprocesador,
-  acumuladorB = 0, programCounter = programCounter microprocesador + 1}
+add microprocesador = aumentarProgramCounter microprocesador{
+  acumuladorA = acumuladorA microprocesador + acumuladorB microprocesador, acumuladorB = 0}
 
 errorDivisionPorCero :: Instruccion
-errorDivisionPorCero microprocesador = microprocesador{mensajeError = "DIVISION BY ZERO",
-  programCounter = programCounter microprocesador + 1}
+errorDivisionPorCero microprocesador = aumentarProgramCounter microprocesador{mensajeError = "DIVISION BY ZERO"}
 
 realizarDivision :: Instruccion
-realizarDivision microprocesador = microprocesador{acumuladorA = div (acumuladorA microprocesador) (acumuladorB microprocesador),
-  acumuladorB = 0, programCounter = programCounter microprocesador + 1}
+realizarDivision microprocesador = aumentarProgramCounter microprocesador{acumuladorA = div (acumuladorA microprocesador) (acumuladorB microprocesador),
+  acumuladorB = 0}
 
 divide :: Instruccion
 divide microprocesador
-  |acumuladorB microprocesador == 0 = errorDivisionPorCero microprocesador
+  |(acumuladorB microprocesador == 0) = errorDivisionPorCero microprocesador
   |otherwise = realizarDivision microprocesador
 
 swap :: Instruccion
-swap microprocesador = microprocesador{acumuladorA = acumuladorB microprocesador, acumuladorB = acumuladorA microprocesador,
-  programCounter = programCounter microprocesador + 1}
+swap microprocesador = aumentarProgramCounter microprocesador{acumuladorA = acumuladorB microprocesador,
+  acumuladorB = acumuladorA microprocesador}
 
 lodv :: Int -> Microprocesador -> Microprocesador
-lodv valorACargar microprocesador = microprocesador{acumuladorA = valorACargar, programCounter = programCounter microprocesador + 1}
+lodv valorACargar microprocesador = aumentarProgramCounter microprocesador{acumuladorA = valorACargar}
 
 cargarMemoriaEnAcumuladorA :: Int -> Microprocesador -> Microprocesador
-cargarMemoriaEnAcumuladorA direccion microprocesador = microprocesador{acumuladorA = (memoria microprocesador) !! (direccion - 1),
-  programCounter = programCounter microprocesador + 1}
+cargarMemoriaEnAcumuladorA direccion microprocesador = aumentarProgramCounter microprocesador{
+  acumuladorA = (memoria microprocesador) !! (direccion - 1)}
 
 errorMemoriaNoInicializada :: Instruccion
-errorMemoriaNoInicializada microprocesador = microprocesador{mensajeError = "Posicion de memoria especificada no inicializada",
-  programCounter = programCounter microprocesador + 1}
+errorMemoriaNoInicializada microprocesador = aumentarProgramCounter microprocesador{
+  mensajeError = "Posicion de memoria especificada no inicializada"}
 
 lod :: Int -> Microprocesador -> Microprocesador
 lod direccion microprocesador
-  |(length.memoria) microprocesador >= direccion = cargarMemoriaEnAcumuladorA direccion microprocesador
+  |((length.memoria) microprocesador >= direccion) = cargarMemoriaEnAcumuladorA direccion microprocesador
   |otherwise = errorMemoriaNoInicializada microprocesador
 
 cargarValorEnMemoria :: Int -> Int -> Memoria -> Memoria
@@ -68,14 +69,13 @@ extenderMemoria :: Int -> Memoria -> Memoria
 extenderMemoria direccion memoria = memoria ++ (replicate (direccion - length memoria) 0)
 
 inicializarMemoria :: Int -> Int -> Microprocesador -> Microprocesador
-inicializarMemoria direccion valor microprocesador = microprocesador{
-  memoria = cargarValorEnMemoria direccion valor (extenderMemoria direccion (memoria microprocesador)),
-  programCounter = programCounter microprocesador + 1}
+inicializarMemoria direccion valor microprocesador = aumentarProgramCounter microprocesador{
+  memoria = cargarValorEnMemoria direccion valor (extenderMemoria direccion (memoria microprocesador))}
 
 str :: Int -> Int -> Microprocesador -> Microprocesador
 str direccion valor microprocesador
-  |(length.memoria) microprocesador >= direccion = microprocesador{memoria = cargarValorEnMemoria direccion valor
-    (memoria microprocesador), programCounter = programCounter microprocesador + 1}
+  |((length.memoria) microprocesador >= direccion) = aumentarProgramCounter microprocesador{
+    memoria = cargarValorEnMemoria direccion valor (memoria microprocesador)}
   |otherwise = inicializarMemoria direccion valor microprocesador
 
 {- EJERCICIOS EN CONSOLA
@@ -93,7 +93,10 @@ Memoria: []
 Mensaje de error : 
 
 ¿Qué concepto interviene para lograr este punto?
-Composición
+El concepto que interviene en este punto es el de composición de funciones. No podriamos realizarlo de otra
+forma (por ejemplo, llamando a nop 3 veces por separado) porque dentro del paradigma los programas no tienen
+estado. Esto hace que no  podamos almacenar el resultado de aplicar nop al microprocesador una vez para
+luego pasarle como parametro un microprocesador modificado a la siguiente llamada.
 ________________________________________________________________________
 3.3.2
 Implementar el siguiente programa, que permite sumar 10 + 22
@@ -103,7 +106,7 @@ SWAP      // Cargo el valor 10 en el acumulador B (paso de A a B)
 LODV 22   // Cargo el valor 22 en el acumulador A
 ADD       // Realizo la suma y el resultado queda en el acumulador A
 
-*MicroEntrega1> ( add . lodv 22 . swap . lodv 10 ) xt8088
+*MicroEntrega1> ( add . (lodv 22) . swap . (lodv 10) ) xt8088
 Modelo: xt8088
 Program counter: 4
 Acumulador A: 32
@@ -125,7 +128,7 @@ El microprocesador debe tener en la etiqueta de error el
 mensaje “DIVISION BY ZERO” y el Program Counter debe quedar 
 en 6 (el índice de la instrucción donde ocurrió el error).
 
-*MicroEntrega1> ( divide . lod 1 . swap . lod 2 . str 2 0 . str 1 2 ) xt8088
+*MicroEntrega1> ( divide . (lod 1) . swap . (lod 2) . (str 2 0) . (str 1 2) ) xt8088
 Modelo: xt8088
 Program counter: 6
 Acumulador A: 2
