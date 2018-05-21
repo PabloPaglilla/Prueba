@@ -148,7 +148,7 @@ memoriaOrdenada microprocesador
   |length (memoria microprocesador) <= 1 = True
   |primerosDosElementosOrdenados (memoria microprocesador) = memoriaOrdenada microprocesador{memoria = tail (memoria microprocesador)}
   |otherwise = False
-  
+
 {- EJERCICIOS EN CONSOLA
 ______________________________________________________________________
 CASOS DE PRUEBA
