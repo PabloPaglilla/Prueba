@@ -29,6 +29,10 @@ fp20 :: Microprocesador
 fp20 = Microprocesador{modelo = "fp20", programCounter = 0, acumuladorA = 7, acumuladorB = 24,
   memoria = [], mensajeError = "", programa = []}
 
+microDesorden :: Microprocesador
+microDesorden = Microprocesador{modelo = "microDesorden", programCounter = 0, acumuladorA = 0, acumuladorB = 0,
+  memoria = [2, 5, 1, 0, 6, 9], mensajeError = "", programa = []}
+
 microMemoriaInfinita :: Microprocesador
 microMemoriaInfinita = Microprocesador{modelo = "memoriaInfinita", programCounter = 0, acumuladorA = 0,
   acumuladorB = 0, memoria = [0, 0 ..], mensajeError = "", programa = []}
@@ -39,6 +43,7 @@ sumar10Y22 = [lodv 10, swap, lodv 22, add]
 dividir2Por0 :: Programa
 dividir2Por0 = [str 1 2, str 2 0, lod 2, swap, lod 1, divide]
 
+aumentarProgramCounter :: Instruccion
 aumentarProgramCounter microprocesador = microprocesador {programCounter = programCounter microprocesador + 1}
 
 nop :: Instruccion
