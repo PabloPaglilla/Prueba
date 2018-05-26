@@ -132,18 +132,7 @@ acumuladoresYMemoriaEn0 microprocesador = (acumuladorA microprocesador == 0) && 
   (memoriaEn0 microprocesador)
 
 depurarPrograma :: Instruccion
-depurarPrograma microprocesador = microprocesador{programa =
-  depuracionRecursiva (programa microprocesador) microprocesador []}
-
---Depuracion recursiva recibe una lista vacia como tercer parametro, en la cual cargará
---recursivamente las instrucciones que conformen el programa depurado para luego devolverla
-depuracionRecursiva :: Programa -> Microprocesador -> Programa -> Programa
-depuracionRecursiva [] _ programaDepurado = programaDepurado
-depuracionRecursiva programa microprocesador programaDepurado
-  |acumuladoresYMemoriaEn0 ((siguienteInstruccion programa) microprocesador) =
-    depuracionRecursiva (instruccionesRestantes programa) microprocesador programaDepurado
-  |otherwise = depuracionRecursiva (instruccionesRestantes programa) microprocesador 
-    (programaDepurado ++ [(siguienteInstruccion programa)])
+depurarPrograma microprocesador = microprocesador{programa = filter (not.acumuladoresYMemoriaEn0.(flip ($) microprocesador)) (programa microprocesador)}
 
 primerosDosElementosOrdenados :: Memoria -> Bool
 primerosDosElementosOrdenados (x:xs) = x <= head xs
