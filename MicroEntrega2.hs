@@ -121,40 +121,49 @@ ejecucionRecursiva programa microprocesador
 
 ifnz :: Instruccion
 ifnz microprocesador
-  |acumuladorA microprocesador == 0 = microprocesador
+  |acumuladorAEn0 microprocesador = microprocesador
   |otherwise = ejecutarPrograma microprocesador
 
 memoriaEn0 :: Microprocesador -> Bool
 memoriaEn0 = (all (== 0)).memoria
 
+acumuladorAEn0 :: Microprocesador -> Bool
+acumuladorAEn0 = (== 0).acumuladorA
+
+acumuladorBEn0 :: Microprocesador -> Bool
+acumuladorBEn0 = (== 0).acumuladorB
+
 acumuladoresYMemoriaEn0 :: Microprocesador -> Bool
-acumuladoresYMemoriaEn0 microprocesador = (acumuladorA microprocesador == 0) && (acumuladorB microprocesador == 0) &&
+acumuladoresYMemoriaEn0 microprocesador = (acumuladorAEn0 microprocesador) && (acumuladorBEn0 microprocesador) &&
   (memoriaEn0 microprocesador)
 
 depurarPrograma :: Instruccion
-depurarPrograma microprocesador = microprocesador{programa =
-  depuracionRecursiva (programa microprocesador) microprocesador []}
+depurarPrograma microprocesador = microprocesador{programa = depuracion microprocesador}
 
---Depuracion recursiva recibe una lista vacia como tercer parametro, en la cual cargará
---recursivamente las instrucciones que conformen el programa depurado para luego devolverla
-depuracionRecursiva :: Programa -> Microprocesador -> Programa -> Programa
-depuracionRecursiva [] _ programaDepurado = programaDepurado
-depuracionRecursiva programa microprocesador programaDepurado
-  |acumuladoresYMemoriaEn0 ((siguienteInstruccion programa) microprocesador) =
-    depuracionRecursiva (instruccionesRestantes programa) microprocesador programaDepurado
-  |otherwise = depuracionRecursiva (instruccionesRestantes programa) microprocesador 
-    (programaDepurado ++ [(siguienteInstruccion programa)])
-
-primerosDosElementosOrdenados :: Memoria -> Bool
-primerosDosElementosOrdenados (x:xs) = x <= head xs
+depuracion :: Microprocesador -> Programa
+depuracion microprocesador = filter (not.acumuladoresYMemoriaEn0.($ microprocesador)) (programa microprocesador)
 
 memoriaOrdenada :: Microprocesador -> Bool
-memoriaOrdenada microprocesador
-  |length (memoria microprocesador) <= 1 = True
-  |primerosDosElementosOrdenados (memoria microprocesador) = memoriaOrdenada microprocesador{memoria = tail (memoria microprocesador)}
-  |otherwise = False
-  
+memoriaOrdenada = estaOrdenada.memoria 
+
+estaOrdenada :: Memoria -> Bool
+estaOrdenada [] = True
+estaOrdenada [x] = True
+estaOrdenada (x:y:xs) = x <= y && estaOrdenada (y:xs)
+
 {- EJERCICIOS EN CONSOLA
+______________________________________________________________________
+PUNTO 6
+______________________________________________________________________
+En el microprocesador con memoria infinita podrá cargarse y ejecutarse el programa
+que suma 10 y 22 sin problemas. Esto sucede porque, a raiz de lazy evaluation,
+no se evalua la memoria al no ser necesario.
+
+No es el caso al querer ver si la memoria del microprocesador se encuentra ordenada.
+El programa aplicaría lazy evaluation y la función devolvería false en el caso de que
+encontrara un punto donde la lista se encuentra desordenada. De no ser así, seguirá
+evaluando la lista infinitamente y deberá detenerse la ejecución manualmente. Este último
+es el caso de nuestro microprocesador cuya memoria está inicializada en 0.
 ______________________________________________________________________
 CASOS DE PRUEBA
 ______________________________________________________________________
